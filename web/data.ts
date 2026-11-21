@@ -1,5 +1,5 @@
 import { t } from './i18n'
-import { localAsset, restoreLocalPackages, hiddenServerProjects, hideServerProject, showServerProject, preferServerPackage, isLocalPackage, removeLocalPackage, readDirectoryAsset } from './local-packages'
+import { localAsset, restoreLocalPackages, hiddenServerProjects, hideServerProject, showServerProject, preferServerPackage, setServerPackageChecks, isLocalPackage, removeLocalPackage, readDirectoryAsset } from './local-packages'
 import type { AppContext, Catalog, CoreContent, Manifest, ProjectDescriptor, SearchDocument, SymbolRecord } from './types';
 export function asset(path: string): string {
     return new URL(path, document.baseURI).toString();
@@ -54,6 +54,7 @@ export function loadCatalog(): Promise<Catalog> {
             if (catalog.schemaVersion !== 2 || !Array.isArray(catalog.projects))
                 throw new Error(t("项目目录格式不兼容：需要 schemaVersion 2。"));
             catalog.projects.forEach(item => { serverProjectIds.add(item.id); serverDescriptors.set(item.id, item); });
+            setServerPackageChecks(catalog.packageChecks);
             const local = await restoreLocalPackages(serverProjectIds);
             const hidden = hiddenServerProjects();
             const server = catalog.projects.filter(item => !hidden.has(item.id));

@@ -277,8 +277,14 @@ export interface ProjectDescriptor {
   }
 }
 
+export interface PackageCheck {
+  warnings: Array<{ message: string; args?: string[] }>
+  unavailable: string[]
+}
+
 export interface Catalog {
   schemaVersion: number
   generatedBy: string
   projects: ProjectDescriptor[]
+  packageChecks?: Record<string, PackageCheck>
 }

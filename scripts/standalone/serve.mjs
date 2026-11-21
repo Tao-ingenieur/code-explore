@@ -2,6 +2,7 @@ import http from 'node:http'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { inspectPackage } from './package-checks.mjs'
 export function startServer(directory = path.dirname(fileURLToPath(import.meta.url)), options = {}) {
 const BUILD = path.resolve(directory, 'build')
 const CATALOG = path.join(BUILD, 'projects/catalog.json')
@@ -21,7 +22,8 @@ function diskCatalog() {
     projects.push(descriptor)
   }
   projects.sort((a, b) => a.id.localeCompare(b.id))
-  return { schemaVersion: 2, generatedBy: 'local-service', projects }
+  const packageChecks = Object.fromEntries(projects.map(descriptor => [descriptor.id, inspectPackage(path.join(SUBMISSION, descriptor.id), descriptor)]))
+  return { schemaVersion: 2, generatedBy: 'local-service', projects, packageChecks }
 }
 
 const portIndex = process.argv.indexOf('--port')

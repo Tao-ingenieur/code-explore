@@ -16,6 +16,7 @@ function projectPackages(): Plugin {
     name: 'isolated-project-packages',
     closeBundle() {
       fs.copyFileSync(path.join(navigatorRoot, 'scripts/standalone/serve.mjs'), path.resolve(buildRoot, '../serve.mjs'))
+      fs.copyFileSync(path.join(navigatorRoot, 'scripts/standalone/package-checks.mjs'), path.resolve(buildRoot, '../package-checks.mjs'))
       fs.copyFileSync(path.join(navigatorRoot, 'scripts/standalone/README.md'), path.resolve(buildRoot, '../README.md'))
       fs.mkdirSync(path.join(buildRoot, 'docs'), { recursive: true })
       for (const name of ['agent-prompt.md', 'comparison-prompt.md']) fs.copyFileSync(path.join(navigatorRoot, 'docs', name), path.join(buildRoot, 'docs', name))

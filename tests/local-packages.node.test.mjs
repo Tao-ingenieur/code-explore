@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import vm from 'node:vm'
 import path from 'node:path'
 import ts from 'typescript'
+import { inspectPackage } from '../scripts/standalone/package-checks.mjs'
 
 const source = fs.readFileSync(new URL('../web/local-packages.ts', import.meta.url), 'utf8')
 function createApp() {
@@ -45,7 +46,7 @@ test('server projects supersede saved directory permissions and use HTTP, includ
     require: name => name === './local-packages' ? app : { t: key => key },
     fetch: async url => {
       requested.push(url)
-      return new Response(url.endsWith('catalog.json') ? JSON.stringify({ schemaVersion: 2, projects: [d] }) : 'server source')
+      return new Response(url.endsWith('catalog.json') ? JSON.stringify({ schemaVersion: 2, projects: [d], packageChecks: { sample: { warnings: [{ message: '本地资料包缺少或无法使用文件：{0}', args: ['source/missing.ts'] }], unavailable: ['source/missing.ts'] } } }) : 'server source')
     },
   })
   const catalog = await exports.loadCatalog()
@@ -53,6 +54,8 @@ test('server projects supersede saved directory permissions and use HTTP, includ
   assert.equal(app.isLocalPackage(d.id), false)
   assert.equal(app.needsDirectoryPermission(d.id), false)
   assert.equal(permissionChecks, 0)
+  assert.deepEqual(Array.from(app.packageWarnings(d.id)), ['本地资料包缺少或无法使用文件：source/missing.ts'])
+  assert.equal(app.isUnavailableAsset(d.id, 'source/missing.ts'), true)
   assert.equal(await exports.loadSource(d.id, 'main.ts'), 'server source')
   assert.ok(requested.includes('http://localhost/app/projects/sample/source/main.ts'))
   assert.ok(app.saved.has(d.id), 'old registration is retained without requesting its permission')
@@ -204,6 +207,9 @@ test('available output packages remain importable without changing their content
     const app = createApp()
     const imported = await app.importLocalDirectory(diskDirectory(fileURLToPath(directory)), new Set())
     assert.equal(imported.id, expected.id)
+    const checks = inspectPackage(fileURLToPath(directory), expected)
+    const serverWarnings = checks.warnings.map(issue => issue.message.replace(/\{(\d+)\}/g, (_, n) => String(issue.args[n]))).sort()
+    assert.deepEqual(serverWarnings, Array.from(app.packageWarnings(expected.id)).sort(), 'server and directory checks must report the same warnings for ' + expected.id)
     t.diagnostic(expected.id + ': imported, ' + app.packageWarnings(expected.id).length + ' warnings')
   }
 })

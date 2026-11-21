@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { CATALOG, SUBMISSION, readJson, writeJson } from './lib.mjs'
+import { inspectPackage } from './standalone/package-checks.mjs'
 
 fs.mkdirSync(SUBMISSION, { recursive: true })
 
@@ -49,6 +50,7 @@ if (errors.length) {
   console.error(errors.map(error => `错误：${error}`).join('\n'))
   process.exit(1)
 }
-const catalog = { schemaVersion: 2, generatedBy: 'build-catalog.mjs', projects: descriptors }
+const packageChecks = Object.fromEntries(descriptors.map(descriptor => [descriptor.id, inspectPackage(path.join(SUBMISSION, descriptor.id), descriptor)]))
+const catalog = { schemaVersion: 2, generatedBy: 'build-catalog.mjs', projects: descriptors, packageChecks }
 writeJson(CATALOG, catalog)
 console.log(`项目目录已生成：${descriptors.map(item => `${item.id}@${item.snapshot.id}`).join(', ')}`)

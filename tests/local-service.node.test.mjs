@@ -18,7 +18,12 @@ test('local service discovers output packages and reads current disk files inste
   write('build/index.html', '<h1>app</h1>')
   write('build/projects/catalog.json', JSON.stringify({ schemaVersion: 2, projects: [] }))
   write('build/projects/sample/source/main.ts', 'stale source')
-  write('output/sample/project.json', JSON.stringify({ schemaVersion: 2, id: 'sample', name: 'Sample' }))
+  const descriptor = { schemaVersion: 2, id: 'sample', name: 'Sample', type: 'source-analysis', contentVersion: '1', snapshot: { id: 'sample-snapshot' }, source: { root: 'source' }, entries: { content: 'index/content.json', search: 'index/search.json', manifest: 'index/manifest.json', symbols: 'index/symbols/' } }
+  write('output/sample/project.json', JSON.stringify(descriptor))
+  const identity = { projectId: 'sample', snapshotId: 'sample-snapshot', contentVersion: '1' }
+  write('output/sample/index/content.json', JSON.stringify({ ...identity, package: descriptor }))
+  write('output/sample/index/manifest.json', JSON.stringify({ ...identity, files: [{ path: 'main.ts' }] }))
+  write('output/sample/index/search.json', JSON.stringify({ ...identity, documents: [] }))
   write('output/sample/source/main.ts', 'current source')
   const server = startServer(root, { port: 0, handleSignals: false })
   try {
@@ -26,6 +31,11 @@ test('local service discovers output packages and reads current disk files inste
     const base = `http://127.0.0.1:${server.address().port}`
     const catalog = async () => (await fetch(base + '/projects/catalog.json')).json()
     assert.deepEqual((await catalog()).projects.map(p => p.id), ['sample'])
+    let checks = (await catalog()).packageChecks.sample
+    assert.equal(checks.warnings.length, 1)
+    assert.deepEqual(checks.unavailable, ['index/symbols/main.ts.json'])
+    write('output/sample/index/symbols/main.ts.json', '[]')
+    assert.equal((await catalog()).packageChecks.sample.warnings.length, 0, 'refresh must clear resolved warnings')
     const sourceUrl = base + '/projects/sample/source/main.ts'
     assert.equal(await (await fetch(sourceUrl)).text(), 'current source')
     write('output/sample/source/main.ts', 'updated source')
@@ -33,6 +43,9 @@ test('local service discovers output packages and reads current disk files inste
     write('output/second/project.json', JSON.stringify({ schemaVersion: 2, id: 'second' }))
     assert.equal((await catalog()).projects.length, 2)
     fs.unlinkSync(path.join(root, 'output/sample/source/main.ts'))
+    checks = (await catalog()).packageChecks.sample
+    assert.equal(checks.warnings.length, 1)
+    assert.deepEqual(checks.unavailable, ['source/main.ts'])
     assert.equal((await fetch(sourceUrl)).status, 404, 'missing disk files must not fall back to stale build data')
     fs.renameSync(path.join(root, 'output'), path.join(root, 'output-disabled'))
     assert.deepEqual((await catalog()).projects, [])

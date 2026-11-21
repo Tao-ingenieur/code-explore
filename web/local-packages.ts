@@ -1,5 +1,5 @@
 import { t } from './i18n'
-import type { ProjectDescriptor } from './types'
+import type { PackageCheck, ProjectDescriptor } from './types'
 
 export interface DirectoryHandle {
   kind: 'directory'
@@ -73,8 +73,10 @@ export async function restoreLocalPackages(excludedIds: Set<string>): Promise<Pr
   } catch { /* Disabled IndexedDB must not block server-backed packages. */ }
   return [...mounted.values()].filter(item => !excludedIds.has(item.value.id)).map(item => item.value.descriptor)
 }
-export function packageWarnings(id: string): string[] { return mounted.get(id)?.value.warnings || [] }
-export function isUnavailableAsset(id: string, path: string): boolean { return mounted.get(id)?.value.unavailable?.includes(path) || false }
+let serverChecks: Record<string, PackageCheck> = {}
+export function setServerPackageChecks(checks: Record<string, PackageCheck> = {}): void { serverChecks = checks }
+export function packageWarnings(id: string): string[] { return mounted.get(id)?.value.warnings ?? serverChecks[id]?.warnings.map(issue => t(issue.message, ...(issue.args || []))) ?? [] }
+export function isUnavailableAsset(id: string, path: string): boolean { return (mounted.get(id)?.value.unavailable ?? serverChecks[id]?.unavailable)?.includes(path) || false }
 export function isLocalPackage(id: string): boolean { return mounted.has(id) }
 export function needsDirectoryPermission(id: string): boolean { return mounted.get(id)?.needsPermission || false }
 export function isLegacyCopy(id: string): boolean { return !!mounted.get(id)?.value.files }
