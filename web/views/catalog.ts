@@ -25,7 +25,12 @@ export function renderProjectCatalog(catalog: Catalog): HTMLElement {
     copy.append(el('span', 'eyebrow', 'CODE EXPLORE'), el('h1', '', t("源码导航")));
     copy.append(el('p', '', t("单项目源码阅读、证据追踪与双项目对比。打开已生成的分析目录，沿章节、符号和源码行号理解系统如何工作。无需数据库、登录或外部 LLM API。")));
     const heroActions = el('div', 'catalog-hero-actions');
-    const importButton = el('button', 'button primary', t('打开资料包目录')) as HTMLButtonElement;
+    const refreshButton = el('button', 'button primary', t('刷新本地资料包')) as HTMLButtonElement;
+    refreshButton.type = 'button';
+    refreshButton.dataset.testid = 'refresh-server-packages';
+    refreshButton.addEventListener('click', () => window.location.reload());
+    heroActions.append(refreshButton);
+    const importButton = el('button', 'button secondary', t('打开其他目录（需授权）')) as HTMLButtonElement;
     importButton.type = 'button';
     importButton.dataset.testid = 'open-package-directory';
     const importStatus = el('p', 'catalog-import-status');
@@ -49,7 +54,7 @@ export function renderProjectCatalog(catalog: Catalog): HTMLElement {
     heroActions.append(compareLink);
     const formatLink = anchor(t('资料包格式说明'), '#/package-help', 'button secondary', 'book');
     heroActions.append(formatLink);
-    copy.append(heroActions, el('p', 'catalog-picker-mode', t('目录选择：浏览器目录授权，直接读取原文件。')), importStatus);
+    copy.append(heroActions, el('p', 'catalog-picker-mode', t('本地 output 中的资料包由服务直接读取，无需目录授权；其他目录可手动接入。')), importStatus);
     hero.append(copy);
     view.append(hero);
     const recent = recentProjects();
@@ -86,7 +91,7 @@ export function renderProjectCatalog(catalog: Catalog): HTMLElement {
         const card = el('article', `project-card project-type-${descriptor.type}`);
         card.dataset.projectId = descriptor.id;
         const top = el('div', 'project-card-top');
-        top.append(el('span', 'project-type-badge', typeLabel(descriptor)), el('span', 'project-id', isLocalPackage(descriptor.id) ? isLegacyCopy(descriptor.id) ? t('旧版浏览器副本') : t('原目录直读') : descriptor.id));
+        top.append(el('span', 'project-type-badge', typeLabel(descriptor)), el('span', 'project-id', isLocalPackage(descriptor.id) ? isLegacyCopy(descriptor.id) ? t('旧版浏览器副本') : t('原目录直读') : t('服务读取')));
         card.append(top);
         card.append(el('h2', '', descriptor.name));
         card.append(el('p', 'project-card-language', descriptor.type === 'comparison' ? t("双方实现、设计取舍与并排执行场景") : descriptor.source.language));

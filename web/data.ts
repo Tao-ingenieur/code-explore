@@ -1,5 +1,5 @@
 import { t } from './i18n'
-import { localAsset, restoreLocalPackages, hiddenServerProjects, hideServerProject, isLocalPackage, removeLocalPackage, readDirectoryAsset } from './local-packages'
+import { localAsset, restoreLocalPackages, hiddenServerProjects, hideServerProject, showServerProject, preferServerPackage, isLocalPackage, removeLocalPackage, readDirectoryAsset } from './local-packages'
 import type { AppContext, Catalog, CoreContent, Manifest, ProjectDescriptor, SearchDocument, SymbolRecord } from './types';
 export function asset(path: string): string {
     return new URL(path, document.baseURI).toString();
@@ -46,17 +46,17 @@ async function fetchJson<T>(url: string, signal?: AbortSignal): Promise<T> {
     }
 }
 const serverProjectIds = new Set<string>();
+const serverDescriptors = new Map<string, ProjectDescriptor>();
 let catalogPromise: Promise<Catalog> | undefined;
 export function loadCatalog(): Promise<Catalog> {
     if (!catalogPromise) {
         catalogPromise = fetchJson<Catalog>(asset('projects/catalog.json')).then(async catalog => {
             if (catalog.schemaVersion !== 2 || !Array.isArray(catalog.projects))
                 throw new Error(t("项目目录格式不兼容：需要 schemaVersion 2。"));
-            catalog.projects.forEach(item => serverProjectIds.add(item.id));
+            catalog.projects.forEach(item => { serverProjectIds.add(item.id); serverDescriptors.set(item.id, item); });
+            const local = await restoreLocalPackages(serverProjectIds);
             const hidden = hiddenServerProjects();
-            const local = await restoreLocalPackages(new Set());
-            const localIds = new Set(local.map(item => item.id));
-            const server = catalog.projects.filter(item => !hidden.has(item.id) && !localIds.has(item.id));
+            const server = catalog.projects.filter(item => !hidden.has(item.id));
             return { ...catalog, projects: [...server, ...local] };
         }).catch(error => {
             catalogPromise = undefined;
@@ -161,13 +161,19 @@ function clearProjectCaches(projectId: string): void {
 }
 export async function updateLibraryProject(descriptor: ProjectDescriptor): Promise<void> {
     const catalog = await loadCatalog();
+    const server = serverDescriptors.get(descriptor.id);
+    if (server) {
+        preferServerPackage(descriptor.id);
+        showServerProject(descriptor.id);
+        descriptor = server;
+    }
     const index = catalog.projects.findIndex(item => item.id === descriptor.id);
     if (index < 0) catalog.projects.push(descriptor);
     else catalog.projects[index] = descriptor;
     clearProjectCaches(descriptor.id);
 }
 export async function removeLibraryProject(projectId: string): Promise<void> {
-    if (isLocalPackage(projectId)) await removeLocalPackage(projectId);
+    if (isLocalPackage(projectId) || serverProjectIds.has(projectId)) await removeLocalPackage(projectId);
     if (serverProjectIds.has(projectId)) hideServerProject(projectId);
     const catalog = await loadCatalog();
     catalog.projects = catalog.projects.filter(item => item.id !== projectId);

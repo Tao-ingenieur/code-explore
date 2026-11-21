@@ -8,6 +8,7 @@ import ts from 'typescript'
 const source = fs.readFileSync(new URL('../web/local-packages.ts', import.meta.url), 'utf8')
 function createApp() {
   const saved = new Map()
+  const storage = new Map()
   const indexedDB = { open() {
     const request = {}
     queueMicrotask(() => {
@@ -26,10 +27,52 @@ function createApp() {
   const exports = {}
   vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, esModuleInterop: true } }).outputText, {
     exports, indexedDB, Blob, URL, document: { baseURI: 'http://localhost/app/' },
+    localStorage: { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
     require: () => ({ t: (key, ...values) => key.replace(/\{(\d+)\}/g, (_, n) => String(values[n])) }),
   })
   return { ...exports, saved }
 }
+test('server projects supersede saved directory permissions and use HTTP, including after explicit reconnect', async () => {
+  const app = createApp()
+  const d = descriptor()
+  let permissionChecks = 0
+  app.saved.set(d.id, { id: d.id, descriptor: d, handle: { async queryPermission() { permissionChecks++; return 'prompt' } } })
+  app.hideServerProject(d.id)
+  const exports = {}
+  const requested = []
+  vm.runInNewContext(ts.transpileModule(fs.readFileSync(new URL('../web/data.ts', import.meta.url), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText, {
+    exports, URL, Response, document: { baseURI: 'http://localhost/app/' },
+    require: name => name === './local-packages' ? app : { t: key => key },
+    fetch: async url => {
+      requested.push(url)
+      return new Response(url.endsWith('catalog.json') ? JSON.stringify({ schemaVersion: 2, projects: [d] }) : 'server source')
+    },
+  })
+  const catalog = await exports.loadCatalog()
+  assert.equal(catalog.projects.length, 1)
+  assert.equal(app.isLocalPackage(d.id), false)
+  assert.equal(app.needsDirectoryPermission(d.id), false)
+  assert.equal(permissionChecks, 0)
+  assert.equal(await exports.loadSource(d.id, 'main.ts'), 'server source')
+  assert.ok(requested.includes('http://localhost/app/projects/sample/source/main.ts'))
+  assert.ok(app.saved.has(d.id), 'old registration is retained without requesting its permission')
+  await app.importLocalDirectory(makeDirectory().handle, new Set([d.id]))
+  await exports.updateLibraryProject({ ...d, name: 'directory override' })
+  assert.equal(app.isLocalPackage(d.id), false)
+  assert.equal(catalog.projects[0].name, d.name)
+  await exports.removeLibraryProject(d.id)
+  assert.equal(catalog.projects.length, 0)
+  assert.equal(app.saved.has(d.id), false, 'explicit removal clears the old registration so migration cannot restore it again')
+  await app.restoreLocalPackages(new Set([d.id]))
+  assert.equal(app.hiddenServerProjects().has(d.id), true)
+})
+
+test('hidden server projects without a retained directory registration stay hidden', async () => {
+  const app = createApp()
+  app.hideServerProject('sample')
+  await app.restoreLocalPackages(new Set(['sample']))
+  assert.equal(app.hiddenServerProjects().has('sample'), true)
+})
 function descriptor() {
   return { schemaVersion: 2, id: 'sample', name: 'Sample', shortName: 'Sample', type: 'source-analysis', analysisLevel: 'indexed', contentVersion: '1', snapshot: { id: 'snapshot-1', archiveSha256: 'test' }, source: { root: 'source', language: 'TypeScript' }, entries: { manifest: 'index/manifest.json', content: 'index/content.json', search: 'index/search.json', symbols: 'index/symbols/' }, report: null, features: ['files'] }
 }

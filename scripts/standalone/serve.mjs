@@ -6,6 +6,23 @@ export function startServer(directory = path.dirname(fileURLToPath(import.meta.u
 const BUILD = path.resolve(directory, 'build')
 const CATALOG = path.join(BUILD, 'projects/catalog.json')
 const SUBMISSION = path.resolve(directory, 'output')
+function insideOutput(target) {
+  return fs.realpathSync(target).startsWith(`${fs.realpathSync(SUBMISSION)}${path.sep}`)
+}
+function diskCatalog() {
+  const projects = []
+  for (const entry of fs.readdirSync(SUBMISSION, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue
+    const descriptorPath = path.join(SUBMISSION, entry.name, 'project.json')
+    if (!fs.existsSync(descriptorPath)) continue
+    if (!insideOutput(descriptorPath)) throw new Error('Package link escapes output')
+    const descriptor = JSON.parse(fs.readFileSync(descriptorPath, 'utf8'))
+    if (descriptor.schemaVersion !== 2 || descriptor.id !== entry.name || !/^[a-z0-9][a-z0-9-]*$/.test(descriptor.id)) throw new Error(`无效的资料包描述：${entry.name}/project.json`)
+    projects.push(descriptor)
+  }
+  projects.sort((a, b) => a.id.localeCompare(b.id))
+  return { schemaVersion: 2, generatedBy: 'local-service', projects }
+}
 
 const portIndex = process.argv.indexOf('--port')
 const port = options.port ?? Number(portIndex >= 0 ? process.argv[portIndex + 1] : process.env.PORT || 4173)
@@ -22,15 +39,21 @@ const server = http.createServer(async (request, response) => {
   try {
     const url = new URL(request.url || '/', 'http://localhost')
     const decoded = decodeURIComponent(url.pathname)
+    if (decoded === '/projects/catalog.json' && fs.existsSync(SUBMISSION)) {
+      const body = JSON.stringify(diskCatalog())
+      response.writeHead(200, { 'Content-Type': mime['.json'], 'Content-Length': Buffer.byteLength(body), 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' })
+      response.end(request.method === 'HEAD' ? undefined : body)
+      return
+    }
     let target = path.resolve(root, `.${decoded === '/' ? '/index.html' : decoded}`)
     if (target !== root && !target.startsWith(`${root}${path.sep}`)) {
       response.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' })
       response.end('Forbidden')
       return
     }
-    // Local preview reads packages from dist/output without duplicating them.
-    // A self-contained static build still includes projects/ as before.
-    if (!fs.existsSync(target) && decoded.startsWith('/projects/')) {
+    // An existing output package is authoritative, including missing files.
+    // Static-only deployments can still read their build/projects copy.
+    if (decoded.startsWith('/projects/')) {
       const relative = decoded.slice('/projects/'.length)
       const packageTarget = path.resolve(SUBMISSION, relative)
       if (!packageTarget.startsWith(`${SUBMISSION}${path.sep}`)) {
@@ -38,11 +61,11 @@ const server = http.createServer(async (request, response) => {
         response.end('Forbidden')
         return
       }
-      target = relative === 'catalog.json'
-        ? CATALOG
-        : packageTarget
+      const projectId = relative.split('/')[0]
+      if (relative === 'catalog.json') target = CATALOG
+      else if (fs.existsSync(path.join(SUBMISSION, projectId))) target = packageTarget
       if (fs.existsSync(target)) {
-        const allowedRoot = relative === 'catalog.json' ? path.dirname(CATALOG) : SUBMISSION
+        const allowedRoot = relative === 'catalog.json' ? path.dirname(CATALOG) : target === packageTarget ? SUBMISSION : BUILD
         const realTarget = fs.realpathSync(target)
         if (!realTarget.startsWith(`${fs.realpathSync(allowedRoot)}${path.sep}`)) {
           response.writeHead(403)

@@ -1,5 +1,10 @@
 // UI strings only. Package source and authored analysis are never translated.
 export const english: Record<string, string> = {
+  "服务读取": "Server files",
+  "刷新本地资料包": "Refresh local packages",
+  "打开其他目录（需授权）": "Open another folder (permission required)",
+  "资料库已有同标识服务项目，将优先通过服务读取。": "A server project with this ID exists; server files take priority.",
+  "本地 output 中的资料包由服务直接读取，无需目录授权；其他目录可手动接入。": "Packages in local output are read by the server without directory permission; other folders can be connected manually.",
   "AST 提取符号": "AST symbols",
   "AST 解析诊断 {0} · 未解析相对导入记录 {1}": "AST diagnostics {0} · Unresolved relative imports {1}",
   "Markdown 排版预览": "Rendered Markdown",

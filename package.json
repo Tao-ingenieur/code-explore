@@ -25,7 +25,7 @@
     "verify": "npm run data:generate && npm run report:all && npm run build && npm run test:browser && node scripts/run-python.mjs scripts/verify_report.py --all && node scripts/run-python.mjs scripts/audit_delivery.py",
     "build:app": "npm run typecheck && npm run catalog && node scripts/clean-dist.mjs && vite build",
     "test:i18n": "node --test tests/i18n.node.test.mjs",
-    "test:packages": "node --test tests/local-packages.node.test.mjs tests/comparison-selection.node.test.mjs"
+    "test:packages": "node --test tests/local-packages.node.test.mjs tests/comparison-selection.node.test.mjs tests/local-service.node.test.mjs"
   },
   "dependencies": {
     "typescript": "5.9.3"

@@ -53,10 +53,20 @@ function mount(value: StoredPackage, needsPermission = false): void {
   mounted.get(value.id)?.urls.forEach(url => URL.revokeObjectURL(url))
   mounted.set(value.id, { value, needsPermission, urls: new Map() })
 }
+export function preferServerPackage(id: string): void {
+  mounted.get(id)?.urls.forEach(url => URL.revokeObjectURL(url))
+  mounted.delete(id)
+}
 export async function restoreLocalPackages(excludedIds: Set<string>): Promise<ProjectDescriptor[]> {
+  excludedIds.forEach(preferServerPackage)
   try {
     for (const value of await storedPackages()) {
-      if (excludedIds.has(value.id)) continue
+      if (excludedIds.has(value.id)) {
+        // A retained directory registration means this project was re-added
+        // after its server card was hidden. Preserve that visible membership.
+        showServerProject(value.id)
+        continue
+      }
       const granted = value.nativeConnection ? false : !value.handle || !value.handle.queryPermission || await value.handle.queryPermission({ mode: 'read' }).catch(() => 'prompt') === 'granted'
       mount(value, !granted)
     }
@@ -182,7 +192,7 @@ export async function inspectDirectory(handle: DirectoryHandle): Promise<{ descr
 }
 export async function importLocalDirectory(handle: DirectoryHandle, builtInIds: Set<string>): Promise<ProjectDescriptor> {
   const result = await inspectDirectory(handle)
-  if (builtInIds.has(result.descriptor.id)) result.warnings.push(t('资料库已有同标识项目，已使用本次选择的目录。'))
+  if (builtInIds.has(result.descriptor.id)) result.warnings.push(t('资料库已有同标识服务项目，将优先通过服务读取。'))
   const value: StoredPackage = { id: result.descriptor.id, ...result, handle }
   try { await persist(value) } catch { throw new Error(t('无法保存目录授权；请检查浏览器是否支持文件系统句柄及 IndexedDB。')) }
   mount(value)
@@ -216,5 +226,10 @@ export function hiddenServerProjects(): Set<string> {
 export function hideServerProject(id: string): void {
   const hidden = hiddenServerProjects()
   hidden.add(id)
+  localStorage.setItem(HIDDEN_SERVER_KEY, JSON.stringify([...hidden]))
+}
+export function showServerProject(id: string): void {
+  const hidden = hiddenServerProjects()
+  hidden.delete(id)
   localStorage.setItem(HIDDEN_SERVER_KEY, JSON.stringify([...hidden]))
 }
