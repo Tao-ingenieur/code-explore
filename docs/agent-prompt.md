@@ -41,6 +41,8 @@ project.json 的 ID 与目录同名，快照 ID 使用真实归档哈希，featu
 
 默认使用自身可用工具生成同源 TeX/PDF；仅当参数明确改为“不要求”时可省略。生成报告时须实际编译并检查字体、图表、溢出和引用。不能交付伪造 PDF，不能把只生成 TeX 写成报告完成。必选报告未完成须说明阻塞。
 
+报告生成器和版式模板可自行选择，不要求使用本仓库脚本。模板只用于排版；示例中的 TypeScript、Agent、模型调用、工具权限、后台任务、会话恢复、验证建议及结语均不是必选内容。仅在实际项目有证据支持时采用，不适用的段落直接删除。项目定位、语言、运行状态和结论必须来自本项目数据；不得复制其他项目的固定说明，也不得将已执行的离线样例统称为“系统未运行”。
+
 ### 5. 校验和交付
 
 自行校验 JSON、文件清单、哈希、行号、符号分片、搜索、版本和所有跨文件关联，保存可重复运行的校验脚本与实际结果。条件允许时运行原项目适用测试并如实记录。没有导航站运行环境时，明确标注网站交互未验证，不要求启动或修改导航站；接收方负责刷新项目目录和部署。
@@ -166,9 +168,9 @@ step 字段：`id,title,short,description,path,startLine,endLine,symbol,chapter,
 
 自行验证路径、身份、哈希、行号、符号、统计和关联。没有导航站环境时记录网站交互未验证，不修改网站构建目录或项目列表。接收方将完整资料包放在 dist/output 的子目录后刷新项目目录。
 
-### 6. 可选报告与对比扩展
+### 6. 报告与对比扩展
 
-报告无则 report 为 null。需要时填入真实标题与 `report/<title>.pdf`、`report/tex/main.tex`，使用自身工具实际编译并检查渲染。仅生成 TeX 不等于 PDF 已完成。
+报告默认要求；仅参数明确改为“不要求”时 report 为 null。生成时填入真实标题与 `report/<title>.pdf`、`report/tex/main.tex`，使用自身工具实际编译并检查渲染。仅生成 TeX 不等于 PDF 已完成。
 
 对比包另用 `type: comparison`、`analysisLevel: comparison`，source.root/defaultFile 设为空串（不包含第三份源码），在 comparison 中绑定 `projectA,projectB,snapshotA,snapshotB`；引用增加 `project: A/B`，不能复制或混淆双方源码。还需专用 content.comparison 的 topics、scenario、conclusion 数据；本文仅要求单 ZIP 的 source-analysis/document-index。除非另行明确要求，不生成 comparison 类型。
 

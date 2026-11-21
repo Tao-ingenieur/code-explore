@@ -10,6 +10,8 @@
 
 输出到 dist/output/<comparison-id>/；若用户指定其他位置则遵从该位置。交付一个可直接选择打开的目录，至少包含 project.json、index/content.json、index/search.json。无需 ZIP。PDF/TeX 报告默认要求；如不需要，可明确将该参数改为“不要求”。默认须生成同源 TeX/PDF，实际编译并检查字体、图表、溢出和引用；必选报告未完成须说明阻塞。仅在明确不要求报告时，report 才可为 null。
 
+报告生成器和版式模板可自行选择，不要求使用本仓库脚本。模板中的 TypeScript、Agent 机制、验证建议和结语仅是领域示例，按双方实际证据选用；不适用时删除。项目语言、运行状态、差异与结论必须来自这两个项目，不复制固定 Agent 说明。
+
 ## 输入身份与证据
 
 1. 必须从用户给出的两份 project.json 或本提示词末尾的元数据读取 projectA.id、projectB.id 及双方 snapshot.id，不得按名称猜测。没有元数据时先索取，不能编造绑定。

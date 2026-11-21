@@ -26,3 +26,5 @@ node serve.mjs --port 4173
 整体移动此目录后仍可运行。
 前端程序需要更新时，在源码仓库执行 `npm run build:app`，再使用更新后的运行包。新增或修改 output 资料包只需刷新网页；更新 serve.mjs 后需重启本地服务。
 仅使用普通静态服务器托管 build 时，需先生成含完整资料包的静态部署版本；本启动器支持直接读取旁边的 output。
+
+提示词文件随网站构建自动更新：`build/docs/agent-prompt.md` 和 `build/docs/comparison-prompt.md`。网页展示和复制的正文随前端重新构建更新，下载入口读取上述文件；修改 repo 中的提示词后执行 `npm run build:app`，再刷新网页。单独修改源码文档不会自动更新已有运行包。报告默认要求 PDF/TeX，可明确改为“不要求”；报告生成器与版式可自行选择，不适用的领域模板内容应删除。

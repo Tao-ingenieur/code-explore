@@ -292,16 +292,16 @@ def build_tex() -> str:
 \vspace{14mm}
 {\fontsize{31}{40}\selectfont\bfseries REPORT_TITLE\par}
 \vspace{8mm}
-{\Large 从一次输入，到一条可追踪的执行链\par}
+{\Large 从项目资料，到可核查的源码证据\par}
 \vspace{18mm}
-{\large 文件 · 符号 · 模型请求 · 工具权限 · 后台任务 · 会话恢复\par}
+{\large 章节 · 源码证据 · 执行路径 · 覆盖范围\par}
 \vfill
 \noindent\begin{minipage}{\textwidth}
 \small
 \makebox[28mm][l]{源码快照}\nolinkurl{SNAPSHOT_HASH}\par
 \makebox[28mm][l]{内容版本}analysis-CONTENT_VERSION\par
 \makebox[28mm][l]{静态分析日期}ANALYSIS_DATE\par
-\makebox[28mm][l]{报告性质}静态源码研究；示例系统未运行\par
+\makebox[28mm][l]{报告性质}RUNTIME_NOTE\par
 \end{minipage}
 \par\vspace{10mm}
 \noindent\parbox{\textwidth}{\small 网站与本报告读取同一份结构化解读数据。}\par
@@ -313,10 +313,12 @@ def build_tex() -> str:
 \addcontentsline{toc}{section}{报告说明}
 """)
     add(r"\subsection*{项目定位与源码版本}")
-    add("本报告面向具备编程基础、希望理解并开发 Agent 的读者。分析对象是随附的 TypeScript 源码快照，而不是一份通用 Agent 教程。网站提供交互式定位；本报告提供可离线阅读的连贯解释与索引。\n")
+    add(tex(project["source"]["label"]) + "。网站提供交互式定位；本报告使用相同的结构化分析数据，提供离线阅读与索引。\n")
     add(r"\begin{itemize}")
-    add(r"\item 未提供 Git 提交号，以原始附件 SHA-256 作为快照标识：\nolinkurl{" + project["source"]["snapshotSha256"] + "}。")
-    add(r"\item 纳入范围为 " + mono(project["source"]["scope"]) + f"，共 {manifest['stats']['files']} 个文件、{manifest['stats']['totalLines']} 行；AST 提取 {manifest['stats']['symbols']} 个符号。")
+    if project["source"].get("commit"):
+        add(r"\item Git 提交：" + mono(project["source"]["commit"]) + "。")
+    add(r"\item 原始附件 SHA-256：\nolinkurl{" + project["source"]["snapshotSha256"] + "}。")
+    add(r"\item 纳入范围为 " + mono(project["source"]["scope"]) + f"，共 {manifest['stats']['files']} 个文件、{manifest['stats']['totalLines']} 行；索引记录 {manifest['stats']['symbols']} 个符号。")
     add(r"\item " + tex(project["source"]["runtimeNote"]))
     add(r"\end{itemize}")
     add(r"\subsection*{方法与证据口径}")
@@ -368,11 +370,11 @@ def build_tex() -> str:
     if study:
         add(r"\clearpage\section{贯穿案例：" + tex(study["title"]) + "}")
         add(r"\begin{framed}\textbf{假设的用户输入}\par\large“" + tex(study["task"]) + r"”\end{framed}")
-        add(r"\begin{callout}{runtimebg}\textbf{这是静态走查，不是运行记录}\par" + tex(study["premise"]) + r"\end{callout}")
+        add(r"\begin{callout}{runtimebg}\textbf{案例前提与验证范围}\par" + tex(study["premise"]) + r"\end{callout}")
         for step in study["steps"]:
             add(r"\subsection{" + tex(step["stage"] + " · " + step["title"]) + "}")
             add(tex(step["narrative"]))
-            add(r"\begin{framed}\small\textbf{静态观察}：" + tex(step["observation"]) + r"\end{framed}")
+            add(r"\begin{framed}\small\textbf{案例观察}：" + tex(step["observation"]) + r"\end{framed}")
             add(evidence(step["evidence"]))
         add(r"\subsection{成功之外的替代路径}")
         for branch in study["alternatives"]:
@@ -387,7 +389,7 @@ def build_tex() -> str:
         add(r"\subsection{覆盖状态}")
         add(r"\begin{longtable}{@{}p{30mm}p{25mm}p{100mm}@{}}状态 & 文件数 & 口径\\\midrule")
         descriptions = {
-            "indexed": "自动清单、AST 符号与静态导入，不声称人工分析。",
+            "indexed": "自动清单、符号与静态关系，不声称人工分析。",
             "summary": "有人工职责概述，未展开全部分支。",
             "deep": "核心机制有连贯解释与行号证据。",
             "pending": "已有分析，但仍有明确待验证事项。",
@@ -410,7 +412,7 @@ def build_tex() -> str:
         add(r"\end{longtable}\normalsize")
 
         add(r"\clearpage\section{核心函数与符号索引}")
-        add("以下索引只列已绑定人工解读的核心符号。完整 AST 符号搜索保留在网站中；进入条目可沿章节阅读输入、状态、分支和边界。\n")
+        add("以下索引只列已绑定人工解读的核心符号。完整符号搜索保留在网站中；进入条目可沿章节阅读输入、状态、分支和边界。\n")
         add(r"\scriptsize\begin{longtable}{@{}p{48mm}p{47mm}p{16mm}p{40mm}@{}}文件与定义行 & 符号 & 类型 & 解读章节\\\toprule\endfirsthead\toprule文件与定义行 & 符号 & 类型 & 解读章节\\\midrule\endhead")
         for annotation in content["annotations"]:
             symbol_id = annotation.get("symbolId") or ""
@@ -421,15 +423,14 @@ def build_tex() -> str:
             add(r"\nolinkurl{" + annotation["path"] + ":" + str(line) + "} & " + mono(annotation["symbol"]) + " & " + tex(symbol["kind"]) + " & " + tex(chapter["title"] + " / " + annotation["section"]) + r"\\")
         add(r"\end{longtable}\normalsize")
 
-        add(r"\clearpage\section{未验证事项与建议验证顺序}")
-        add(project["source"]["runtimeNote"] + "\n")
+        add(r"\clearpage\section{未验证事项}")
+        add(tex(project["source"]["runtimeNote"]) + "\n")
         add("以下是文件中显式登记的未验证问题。它们是后续实验计划，不是已经通过的测试，也不意味着已经观察到对应故障。\n")
         add(r"\begin{longtable}{@{}p{60mm}p{100mm}@{}}文件 & 未验证事项\\\toprule\endfirsthead\toprule文件 & 未验证事项\\\midrule\endhead")
         for file in manifest["files"]:
             for question in file.get("unresolved", []):
                 add(r"\nolinkurl{" + file["path"] + "} & " + tex(question) + r"\\")
         add(r"\end{longtable}")
-        add("建议顺序：先补全可构建工作树与依赖清单；再用无外部副作用的 fixture 验证消息/工具协议；随后做权限矩阵、取消与后台并发；最后注入崩溃、损坏日志、远端断连和双写，核对恢复边界。所有涉及插件路径、shell、sandbox 或远端任务的实验应在可丢弃环境中进行。\n")
 
         add(r"\clearpage\section{全文件覆盖索引}")
         add(f"本索引覆盖纳入范围的全部 {manifest['stats']['files']} 个文件。路径、模块、状态、物理行数和符号数来自生成清单；逐文件用途、依赖、哈希与完整符号资料请使用网站。自动归类用途不代表深入分析。\n")
@@ -452,8 +453,6 @@ def build_tex() -> str:
         add("对比主题是人工静态复核结果，不自动生成任意项目之间的架构结论。缺失源码或运行验证不被改写为原产品缺少能力，也不据此宣布某一方更先进或更安全。\n")
         add(r"\subsection{对比结论}")
         add(tex(content["comparisonConclusion"]))
-    add(r"\clearpage\section*{结语}\addcontentsline{toc}{section}{结语}")
-    add("这套源码最值得学习的，不是某个孤立的“Agent 公式”，而是多条明确边界的连接：输入队列与模型迭代分离，工具权限与副作用分离，内部事件与 SDK 结果分离，会话日志与执行现场分离。沿这些边界阅读，才能同时理解它的能力与不能被静态源码证明的部分。\n")
     add(r"\vfill\begin{center}{\small 内容版本 analysis-CONTENT_VERSION · 快照 SNAPSHOT_SHORT · 网站与 PDF 同源}\end{center}")
     add(r"\end{document}")
     document = "\n".join(out)
@@ -464,6 +463,7 @@ def build_tex() -> str:
         "SNAPSHOT_HASH": project["source"]["snapshotSha256"],
         "SNAPSHOT_SHORT": project["source"]["snapshotSha256"][:12],
         "ANALYSIS_DATE": tex(project["analysisDate"]),
+        "RUNTIME_NOTE": tex(project["source"]["runtimeNote"]),
     }
     for key, value in replacements.items():
         document = document.replace(key, value)
