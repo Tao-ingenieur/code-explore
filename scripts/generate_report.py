@@ -505,7 +505,7 @@ def compile_report(tex_file: Path) -> tuple[Path, str, str]:
         if completed.returncode != 0 or not pdf.exists():
             (VALIDATION / "report-build.log").write_text(log, encoding="utf-8")
             raise RuntimeError(f"TeX 编译失败（exit {completed.returncode}），详见 validation/report-build.log")
-        destination = REPORT / f"{TITLE}.pdf"
+        destination = PACKAGE_DIR / DESCRIPTOR["report"]["pdf"]
         shutil.copyfile(pdf, destination)
         return destination, compiler, log
 
