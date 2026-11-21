@@ -1,0 +1,37 @@
+{
+  "name": "code-explore",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "数据驱动的大型源码导航站与同源 TeX/PDF 报告",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "scripts": {
+    "data:generate": "node scripts/generate-all.mjs",
+    "data:import": "node scripts/import-project.mjs",
+    "data:validate": "node scripts/validate-packages.mjs",
+    "catalog": "node scripts/build-catalog.mjs",
+    "dev": "npm run catalog && vite --host 127.0.0.1",
+    "build": "npm run data:validate && npm run build:app && node scripts/prepare-dist.mjs",
+    "typecheck": "tsc --noEmit",
+    "preview": "node scripts/serve.mjs --port 4173",
+    "report": "node scripts/run-python.mjs scripts/generate_report.py",
+    "report:all": "node scripts/run-python.mjs scripts/generate_report.py --all",
+    "test": "npm run typecheck && npm run test:i18n && npm run test:packages && npm run test:browser",
+    "test:data": "node scripts/validate-packages.mjs --strict",
+    "test:browser": "playwright test && node scripts/sanitize-validation.mjs",
+    "verify": "npm run data:generate && npm run report:all && npm run build && npm run test:browser && node scripts/run-python.mjs scripts/verify_report.py --all && node scripts/run-python.mjs scripts/audit_delivery.py",
+    "build:app": "npm run typecheck && npm run catalog && node scripts/clean-dist.mjs && vite build",
+    "test:i18n": "node --test tests/i18n.node.test.mjs",
+    "test:packages": "node --test tests/local-packages.node.test.mjs tests/comparison-selection.node.test.mjs"
+  },
+  "dependencies": {
+    "typescript": "5.9.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.2",
+    "vite": "6.3.6"
+  }
+}

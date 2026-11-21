@@ -1,0 +1,17 @@
+node_modules/
+__pycache__/
+*.pyc
+.playwright/
+*.log
+.DS_Store
+# All generated files belong in ../dist. Ignore legacy locations too.
+dist/
+public/projects/
+validation/
+test-results/
+playwright-report/
+
+# Local credentials and environment overrides
+.env
+.env.*
+!.env.example
