@@ -20,7 +20,9 @@ node serve.mjs --port 4173
 - [单项目源码分析资料包 Prompt](docs/agent-prompt.md)：输入源码 ZIP，生成独立分析目录。
 - [双项目对比资料包 Prompt](docs/comparison-prompt.md)：输入两份源码 ZIP 及各自的 `project.json`，生成第三份对比目录。
 
-本 GitHub 仓库仅发布程序源码、脚本、测试及提示词，不包含源码资料包、分析报告、构建产物或 `node_modules`。`package.json` 中的 `private: true` 用于阻止误发布到 npm，与 GitHub 仓库的公开状态无关。
+四份分析报告样例见 [报告样例](docs/report-samples/README.md)。两份提示词默认要求生成 PDF/TeX；不需要时可将参数改为“不要求”。
+
+本 GitHub 仓库发布程序源码、脚本、测试、提示词及精选 PDF 报告样例，不包含完整源码资料包、构建产物或 `node_modules`。`package.json` 中的 `private: true` 用于阻止误发布到 npm，与 GitHub 仓库的公开状态无关。
 
 ## 界面语言
 

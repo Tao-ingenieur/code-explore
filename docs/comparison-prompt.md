@@ -8,7 +8,7 @@
 
 根据两份实际源码，生成一份可被 Code Explore 读取的独立专题对比资料包。面向有编程基础的读者，说明相同任务在双方如何实现、分支与失败行为有何不同、各自取舍与无法验证的边界。只生成资料，不修改两份源码；不需要编写网站，也不需要外部数据库或 LLM 接口。对比包无需复制双方源码、符号索引或单项目报告。
 
-输出到 dist/output/<comparison-id>/；若用户指定其他位置则遵从该位置。交付一个可直接选择打开的目录，至少包含 project.json、index/content.json、index/search.json。无需 ZIP，无需 PDF；报告可选，未生成时 report 必须为 null。
+输出到 dist/output/<comparison-id>/；若用户指定其他位置则遵从该位置。交付一个可直接选择打开的目录，至少包含 project.json、index/content.json、index/search.json。无需 ZIP。PDF/TeX 报告默认要求；如不需要，可明确将该参数改为“不要求”。默认须生成同源 TeX/PDF，实际编译并检查字体、图表、溢出和引用；必选报告未完成须说明阻塞。仅在明确不要求报告时，report 才可为 null。
 
 ## 输入身份与证据
 
@@ -60,7 +60,7 @@
     "search": "index/search.json",
     "symbols": ""
   },
-  "report": null,
+  "report": {"title": "<报告标题>", "pdf": "report/<报告标题>.pdf", "tex": "report/tex/main.tex"},
   "features": ["comparison"],
   "analysisDate": "YYYY-MM-DD"
 }
